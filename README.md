@@ -10,6 +10,21 @@ And a screenshot.
 
 ![image](images/celo-dao.jpg)
 
+
+### Table Of Contents
+- [Build Your Own Full Stack DAO On the Celo Blockchain](#build-your-own-full-stack-dao-on-the-celo-blockchain)
+  - [Introduction](#introduction)
+    - [Table Of Contents](#table-of-contents)
+  - [Prerequisites](#prerequisites)
+  - [Requirements](#requirements)
+  - [Smart Contract](#smart-contract)
+    - [Breakdown of the Smart Contract](#breakdown-of-the-smart-contract)
+  - [Deployment](#deployment)
+  - [Frontend](#frontend)
+    - [App.js](#appjs)
+    - [Breakdown of App.js](#breakdown-of-appjs)
+  - [Conclusion](#conclusion)
+
 ## Prerequisites
 
 - Basic understanding of [Solidity](https://soliditylang.org/).
@@ -146,7 +161,7 @@ contract CELODAO {
 
 ```
 
-### Break down
+### Breakdown of the Smart Contract
 
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -519,7 +534,7 @@ export default App;
 
 ```
 
-### Break down
+### Breakdown of App.js
 
 Let's take a look at the `App.js` file and break it down.
 
