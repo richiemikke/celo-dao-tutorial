@@ -2,7 +2,7 @@
 
 ## Introduction
 
-A DAO is a decentralized autonomous organization made possible by the blockchain. They are built and sustained by a community of individuals who are personally invested in it, and power it through a consensus voting mechanism. In this tutorial, I will show you how to build a DAO contract in Solidity. We will walk through the implementation of a simple DAO that enables members to propose and vote on proposals and execute the proposals once they have been approved. We will cover the essential aspects of a DAO, such as the structure of the smart contract, the functions for adding and removing members, creating and voting on proposals, and executing the approved proposals. By the end of this tutorial, you will have a solid understanding of how a DAO works.
+A DAO is a decentralized autonomous organization made possible by the blockchain. They are built and sustained by a community of individuals who are personally invested in it and power it through a consensus voting mechanism. In this tutorial, I will show you how to build a DAO contract in Solidity. We will walk through the implementation of a simple DAO that enables members to propose and vote on proposals and execute the proposals once they have been approved. We will cover the essential aspects of a DAO, such as the structure of the smart contract, the functions for adding and removing members, creating and voting on proposals, and executing the approved proposals. By the end of this tutorial, you will have a solid understanding of how a DAO works.
 
 Here’s a demo [link](https://rococo-malabi-21a086.netlify.app/) of what you’ll be creating.
 
@@ -10,23 +10,36 @@ And a screenshot.
 
 ![image](images/celo-dao.jpg)
 
+
+### Table Of Contents
+- [Build Your Own Full Stack DAO On the Celo Blockchain](#build-your-own-full-stack-dao-on-the-celo-blockchain)
+  - [Introduction](#introduction)
+    - [Table Of Contents](#table-of-contents)
+  - [Prerequisites](#prerequisites)
+  - [Requirements](#requirements)
+  - [Smart Contract](#smart-contract)
+    - [Breakdown of the Smart Contract](#breakdown-of-the-smart-contract)
+  - [Deployment](#deployment)
+  - [Frontend](#frontend)
+    - [App.js](#appjs)
+    - [Breakdown of App.js](#breakdown-of-appjs)
+  - [Conclusion](#conclusion)
+
 ## Prerequisites
 
-- Solidity.
-- React.
+- Basic understanding of [Solidity](https://soliditylang.org/).
+- Basic understanding of [React](https://reactjs.org/).
 
 ## Requirements
 
-- Solidity.
-- React.
-- Bootstrap.
-- NodeJS 12.0.1 upwards installed.
-- Celo Extension Wallet.
-- Remix IDE
+- [Bootstrap](https://getbootstrap.com/).
+- [Node.js 12.0.1](https://nodejs.org/en/) upwards installed.
+- [Celo Extension Wallet](https://docs.celo.org/wallet#celoextensionwallet).
+- [Remix IDE](https://remix.ethereum.org/)
 
-## SmartContract
+## Smart Contract
 
-Let's begin writing our smart contract in Remix IDE
+Let's begin writing our smart contract in the Remix IDE.
 
 The completed code Should look like this.
 
@@ -44,6 +57,7 @@ contract CELODAO {
     }
 
     mapping (address => MemberInfo) public members;
+    mapping(address => mapping(uint => bool)) public voted;
     uint256 public memberCount;
 
 
@@ -70,6 +84,7 @@ contract CELODAO {
     }
 
     function addMember(address _address, uint256 _votingPower) public {
+        require(_address != address(0), "Zero address is not valid");
         require(msg.sender == owner, "Only contract owner can add a new member.");
         require(members[_address].memberAddress == address(0), "The address is already a member.");
         require(_votingPower > 0, "The voting power must be positive.");
@@ -78,16 +93,33 @@ contract CELODAO {
         emit NewMember(_address, _votingPower);
     }
 
+
     function removeMember(address _address) public {
-        require(msg.sender == owner, "Only contract owner can remove a member.");
-        require(members[_address].memberAddress != address(0), "The address is not a member.");
-        require(proposals[proposalCount].proposer != _address, "Member cannot be removed while they have an active proposal.");
+        require(
+            msg.sender == owner,
+            "Only contract owner can remove a member."
+        );
+        require(
+            members[_address].memberAddress != address(0),
+            "The address is not a member."
+        );
+        if (proposalCount > 0) {
+            require(
+                proposals[proposalCount - 1].executed ||
+                    proposals[proposalCount - 1].proposer != _address,
+                "Member cannot be removed while they have an active proposal."
+            );
+        }
         members[_address].memberAddress = address(0);
-        memberCount --;
+        memberCount--;
         emit MemberRemoved(_address);
     }
 
     function createProposal(string memory _description) public {
+        if(proposalCount > 0){
+            require(proposals[proposalCount - 1].executed == true, "There is already an active proposal");
+        }
+        require(members[msg.sender].memberAddress != address(0), "The caller is not a member.");
         Proposal storage proposal = proposals[proposalCount];
         proposal.proposalId = proposalCount;
         proposal.proposer = msg.sender;
@@ -95,7 +127,7 @@ contract CELODAO {
         proposal.yesVotes = 0;
         proposal.noVotes = 0;
         proposal.executed = false;
-        proposalCount ++;
+        proposalCount++;
         emit ProposalCreated(proposalCount, msg.sender, _description);
     }
 
@@ -119,8 +151,19 @@ contract CELODAO {
     }
 
     function vote(uint256 _proposalId, bool _vote) public {
-        require(proposals[_proposalId].votes[msg.sender] == false, "The member has already voted on this proposal.");
-        require(proposals[_proposalId].executed == false, "The proposal has already been executed.");
+        require(
+            members[msg.sender].memberAddress != address(0),
+            "The caller is not a member."
+        );
+        require(
+            voted[msg.sender][_proposalId] == false,
+            "The member has already voted on this proposal."
+        );
+        require(
+            proposals[_proposalId].executed == false,
+            "The proposal has already been executed."
+        );
+        voted[msg.sender][_proposalId] = true;
         proposals[_proposalId].votes[msg.sender] = _vote;
         if (_vote) {
             proposals[_proposalId].yesVotes += members[msg.sender].votingPower;
@@ -148,7 +191,7 @@ contract CELODAO {
 
 ```
 
-### Break down
+### Breakdown of the Smart Contract
 
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -156,7 +199,7 @@ pragma solidity ^0.8.0;
 
 ```
 
-First, we declared our license and the solidity version.
+First, we declared our license and the Solidity version for our compiler.
 
 ```solidity
 contract CELODAO {
@@ -168,15 +211,16 @@ contract CELODAO {
     }
 
     mapping (address => MemberInfo) public members;
+    mapping(address => mapping(uint => bool)) public voted;
     uint256 public memberCount;
     }
 ```
 
-In this section, we define our smart contract CELODAO. Next, we declare a state variable called owner that will store the address of the owner of the smart contract.
+In this section, we define our smart contract **CELODAO**. Next, we declare a state variable called `owner` that will store the address of the owner of the smart contract.
 
 We also declare a new struct `MemberInfo` that contains two fields: `memberAddress` and `votingPower`. This struct will be used to store information about each member of the DAO.
 
-Finally, we declare a public mapping called `members` that maps an address to a `MemberInfo` struct. It will be used to store information about each member of the DAO and then we declare a state variable called `memberCount` which will keep track of the total number of members in our DAO.
+Finally, we declare two `public` mappings called `members` and `voted` where the `members` mapping maps an `address` to a `MemberInfo` struct which will be used to store information about each member of the DAO and the `voted` mapping maps an `address` to a nested mapping that then maps a `proposalId` to a `bool` value keeping track of users who voted on a proposal. Finally, we declare a state variable called `memberCount` which will keep track of the total number of members in our DAO.
 
 ```solidity
     event NewMember(address indexed _address, uint256 _votingPower);
@@ -207,14 +251,15 @@ Here we declare several events that will be emitted when certain actions are tak
 
 ```
 
-In this section, we declares a new struct called `Proposal` that will be used to store information about each proposal. It contains several fields, including the ID of the proposal, the address of the proposer, a description of the proposal, the number of yes votes, the number of no votes, a mapping of each member's vote, and a flag to indicate whether the proposal has been executed.
+In this section, we declare a new struct called `Proposal` that will be used to store information about each proposal. It contains several fields, including the `ID` of the proposal, the `address` of the proposer, a `description` of the proposal, the `number` of `yes` votes, the `number` of `no` votes, a `mapping` of each member's vote, and a `flag` to indicate whether the proposal has been executed.
 
-We also declare a public mapping called proposals that maps a proposal ID to a Proposal struct. proposalCount will keep track of the total number of proposals in our DAO.
+We also declare a public mapping called `proposals` that maps a `proposal ID` to a `Proposal` struct. The `proposalCount` variable will keep track of the total number of proposals in our DAO.
 
-Lastly, we added a constructor function for the CELODAO contract. It sets the owner state variable to the address of the contract creator.
+Lastly, we added a constructor function for the CELODAO contract. It sets the `owner` state variable to the address of the contract creator.
 
 ```solidity
-  function addMember(address _address, uint256 _votingPower) public {
+    function addMember(address _address, uint256 _votingPower) public {
+        require(_address != address(0), "Zero address is not valid");
         require(msg.sender == owner, "Only contract owner can add a new member.");
         require(members[_address].memberAddress == address(0), "The address is already a member.");
         require(_votingPower > 0, "The voting power must be positive.");
@@ -225,23 +270,39 @@ Lastly, we added a constructor function for the CELODAO contract. It sets the ow
 
 ```
 
-Next we add a new function called `addMember` this function adds a new member to our DAO contract. It takes two arguments `_address`, which is the address of the new member, and `_votingPower`, which is the voting power of the new member. The function first checks to make sure that the caller of the function is the contract owner, and that the given \_address is not already a member. It then increases the member count, creates a new MemberInfo struct for the new member, and adds it to the members mapping using the_address as the key. Finally, it emits a NewMember event with the new member's address and voting power.
+Next, we add a new function called `addMember()` this function adds a new member to our DAO contract. It takes two arguments `_address`, which is the address of the new member, and `_votingPower`, which is the voting power of the new member. The function first checks to make sure that the `_address` is not the _zero address_, the caller of the function is the contract `owner`, and that the given \_address is not already a member. It then increases the member count, creates a new `MemberInfo` struct for the new member, and adds it to the members mapping using the `_address` as the key. Finally, it emits a `NewMember` event with the new member's address and voting power.
 
 ```solidity
- function removeMember(address _address) public {
-        require(msg.sender == owner, "Only contract owner can remove a member.");
-        require(members[_address].memberAddress != address(0), "The address is not a member.");
-        require(proposals[proposalCount].proposer != _address, "Member cannot be removed while they have an active proposal.");
+    function removeMember(address _address) public {
+        require(
+            msg.sender == owner,
+            "Only contract owner can remove a member."
+        );
+        require(
+            members[_address].memberAddress != address(0),
+            "The address is not a member."
+        );
+        if (proposalCount > 0) {
+            require(
+                proposals[proposalCount - 1].executed ||
+                    proposals[proposalCount - 1].proposer != _address,
+                "Member cannot be removed while they have an active proposal."
+            );
+        }
         members[_address].memberAddress = address(0);
-        memberCount --;
+        memberCount--;
         emit MemberRemoved(_address);
     }
 ```
 
-Next we add a function `removeMember` This function removes a member from our DAO. It takes one argument `_address`, which is the address of the member to be removed. The function first checks that the caller of the function is the contract owner, that the given \_address is actually a member, and that the member does not have an active proposal. It then sets the member's `memberAddress` to `address(0)`, decreases the `memberCount`, and emits a `MemberRemoved` event with the removed member's address.
+Next, we add a function `removeMember()`. This function removes a member from our DAO. It takes one parameter`_address`, which is the address of the member to be removed. The function first checks that the caller of the function is the contract owner, that the given \_address is actually a member, and that the member does not have an active proposal. It then sets the member's `memberAddress` to `address(0)`, decreases the `memberCount`, and emits a `MemberRemoved` event with the removed member's address.
 
 ```solidity
-function createProposal(string memory _description) public {
+    function createProposal(string memory _description) public {
+        if(proposalCount > 0){
+            require(proposals[proposalCount - 1].executed == true, "There is already an active proposal");
+        }
+        require(members[msg.sender].memberAddress != address(0), "The caller is not a member.");
         Proposal storage proposal = proposals[proposalCount];
         proposal.proposalId = proposalCount;
         proposal.proposer = msg.sender;
@@ -249,14 +310,14 @@ function createProposal(string memory _description) public {
         proposal.yesVotes = 0;
         proposal.noVotes = 0;
         proposal.executed = false;
-        proposalCount ++;
+        proposalCount++;
         emit ProposalCreated(proposalCount, msg.sender, _description);
     }
 ```
 
-Now lets look at the `createProposal` function. This function creates a new proposal in our DAO. It takes one argument `_description`, which is a string containing a description of the proposal.
+Now let's look at the `createProposal()` function. This function creates a new proposal in our DAO. It takes one parameter`_description`, which is a `string` containing a description of the proposal.
 
-The function first creates a reference to the Proposal struct at index `proposalCount` in the proposals array using the storage keyword. It then sets the `proposalId` to the value of `proposalCount`, the proposer to the address of the caller, the description to the provided description, and sets the initial `yesVotes` and `noVotes` to 0.
+The function first checks if the latest proposal(if any) is currently active as there can only be one active proposal at a time and whether the `msg.sender` is a member of the DAO, if none of the checks is passed the function fails with a message. It then creates a reference to the Proposal struct at the index `proposalCount` in the proposals array using the storage keyword. It then sets the `proposalId` to the value of `proposalCount`, the proposer to the address of the caller, the description to the provided description, and sets the initial `yesVotes` and `noVotes` to 0.
 
 Finally, it sets the executed flag to false, indicating that the proposal has not been executed yet.
 
@@ -283,14 +344,25 @@ At the end of the function, the `proposalCount` is incremented, and the new prop
     }
 ```
 
-The next function is the `getProposal()`. This function is a view function that takes an \_index parameter and returns a tuple containing the various properties of a proposal: `proposalId`, `proposer`, `description`, `yesVotes`, `noVotes`, and `executed`.
+The next function is the `getProposal()`. This function is a `view` function that takes an \_index parameter and returns a tuple containing the various properties of a proposal: `proposalId`, `proposer`, `description`, `yesVotes`, `noVotes`, and `executed`.
 
 It creates a `Proposal` object with the corresponding `_index` and returns the properties of the proposal as a tuple.
 
 ```solidity
-   function vote(uint256 _proposalId, bool _vote) public {
-        require(proposals[_proposalId].votes[msg.sender] == false, "The member has already voted on this proposal.");
-        require(proposals[_proposalId].executed == false, "The proposal has already been executed.");
+    function vote(uint256 _proposalId, bool _vote) public {
+        require(
+            members[msg.sender].memberAddress != address(0),
+            "The caller is not a member."
+        );
+        require(
+            voted[msg.sender][_proposalId] == false,
+            "The member has already voted on this proposal."
+        );
+        require(
+            proposals[_proposalId].executed == false,
+            "The proposal has already been executed."
+        );
+        voted[msg.sender][_proposalId] = true;
         proposals[_proposalId].votes[msg.sender] = _vote;
         if (_vote) {
             proposals[_proposalId].yesVotes += members[msg.sender].votingPower;
@@ -302,15 +374,15 @@ It creates a `Proposal` object with the corresponding `_index` and returns the p
     }
 ```
 
-Next we create a function `vote()`. The vote function allows a member to vote on a proposal. The function takes two arguments `_proposalId` is the ID of the proposal being voted on, and `_vote` is a boolean indicating whether the member is voting in favor or against the proposal.
+Next, we create a function `vote()`. The vote function allows a member to vote on a proposal. The function takes two parameters where `_proposalId` is the ID of the proposal being voted on, and `_vote` is a `boolean` indicating whether the member is voting in favor or against the proposal.
 
-The first require statement checks if the member has not already voted on the proposal. If the member has already voted, the function will fail with an error message.
+The first require statement checks if the `msg.sender` is a member of the DAO and the second require statement checks whether he has not already voted on the proposal. If any of those checks fail, the function will fail with an error message.
 
-The second require statement checks if the proposal has not already been executed. If the proposal has already been executed, the function will fail with an error message.
+The third require statement checks if the proposal has not already been executed. If the proposal has already been executed, the function will fail with an error message.
 
-The `proposals[_proposalId].votes[msg.sender] = _vote` line records the member's vote in the votes mapping of the proposal. The votes mapping stores a boolean value indicating whether a member has voted on the proposal or not. If the member is voting in favor of the proposal, their yesVotes count is incremented by their voting power. If they are voting against the proposal, their noVotes count is incremented by their voting power.
+If all checks have passed, we set the `bool` value nested inside `voted` of the sender for this proposal to _true_. The `proposals[_proposalId].votes[msg.sender] = _vote` line records the member's vote in the votes mapping of the proposal. The votes mapping stores a boolean value indicating whether a member has voted on the proposal or not. If the member is voting in favor of the proposal, the proposal's `yesVotes` count is incremented by their voting power. If they are voting against the proposal, the proposal's `noVotes` count is incremented by their voting power.
 
-Finally, the function emits a ProposalVoted event, passing in the proposal ID, the member's address, and their vote. This event can be used to track the progress of a proposal as members vote on it.
+Finally, the function emits a `ProposalVoted` event, passing in the proposal `ID`, the member's `address`, and their `vote`. This event can be used to track the progress of a proposal as members vote on it.
 
 ```solidity
 function executeProposal(uint256 _proposalId) public {
@@ -323,7 +395,7 @@ function executeProposal(uint256 _proposalId) public {
     }
 ```
 
-The `executeProposal()` is a function that allows the proposer of a proposal to execute it. The function first checks that the proposer is the one calling the function, that the proposal has not been executed yet, and that the number of "yes" votes is greater than the number of "no" votes. If all of these conditions are met, the function sets the executed flag to true, indicating that the proposal has been executed. Finally, any actions described in the proposal can be performed.
+The `executeProposal()` is a function that allows the proposer of a proposal to execute it. The function first checks that the proposer is the one calling the function, that the proposal has not yet been executed, and that the number of "yes" votes is greater than the number of "no" votes. If all of these conditions are met, the function sets the executed flag to _true_, indicating that the proposal has been executed. Finally, any actions described in the proposal can be performed.
 
 ```solidity
  function getProposalsLength() public view returns(uint){
@@ -331,31 +403,31 @@ The `executeProposal()` is a function that allows the proposer of a proposal to 
     }
 ```
 
-Finally, the `getProposalsLength()` is a simple function that returns the number of proposals that have been created in the contract. It simply returns the value of the proposalCount variable.
+Finally, the `getProposalsLength()` is a simple function that ***returns*** the `number` of proposals that have been created in the contract. It simply returns the value of the proposalCount variable.
 
 With that, we have gone through all of the code in our DAO Contract. This contract allows members to add and remove other members, create and vote on proposals, and execute proposals that have been approved by the members. It is a basic implementation of a DAO, and it can be extended or modified to suit the needs of a particular use case.
 
 ## Deployment
 
-To deploy our smart contract successfully, we need the celo extention wallet which can be downloaded from [here](https://chrome.google.com/webstore/detail/celoextensionwallet/kkilomkmpmkbdnfelcpgckmpcaemjcdh?hl=en)
+To deploy our smart contract successfully, we need the Celo Extention Wallet which can be downloaded from [here](https://chrome.google.com/webstore/detail/celoextensionwallet/kkilomkmpmkbdnfelcpgckmpcaemjcdh?hl=en)
 
-Next, we need to fund our newly created wallet which can done using the celo alfojares faucet [Here](https://celo.org/developers/faucet)
+Next, we need to fund our newly created wallet which can done using the Celo Alfajores faucet [Here](https://celo.org/developers/faucet)
 
-You can now fund your wallet and deploy your contract using the celo plugin in remix.
+You can now fund your wallet and deploy your contract using the Celo plugin in Remix.
 
 ## Frontend
 
-Click on [this](https://github.com/richiemikke/celo-dao-tutorial) repo from your github.
+Click on [this](https://github.com/richiemikke/celo-dao-tutorial) repo from your GitHub.
 
 - Clone the repo to your computer.
-- open the project from from vscode.
-- Run `npm install` command to install all the dependencies required to run the app locally.
+- open the project in [VS Code](https://code.visualstudio.com/).
+- Run the `npm install` command to install all the dependencies required to run the app locally.
 
-#### App.js
+### App.js
 
 The completed code should look like this.
 
-```solidity
+```js
 import "./App.css";
 import Home from "./components/home";
 import { Proposals } from "./components/proposals";
@@ -521,7 +593,7 @@ export default App;
 
 ```
 
-### Break down
+### Breakdown of App.js
 
 Let's take a look at the `App.js` file and break it down.
 
@@ -535,14 +607,14 @@ import { newKitFromWeb3 } from "@celo/contractkit";
 import celodao from "./contracts/celo-dao.abi.json";
 ```
 
-The first step is to import the necessary components and libraries. We start by importing the Home and Proposals components from the components folder. We then import the `useState`, `useEffect`, and `useCallback` hooks from React, as well as the Web3 library for interacting with the Ethereum blockchain. Lastly, we import the contract ABI (Application Binary Interface) for the Celo-Dao contract from the contracts folder.
+The first step is to import the necessary components and libraries. We start by importing the **Home** and **Proposals** components from the components folder. We then import the `useState`, `useEffect`, and `useCallback` hooks from React, as well as the **Web3** library to interact with the Ethereum blockchain. Lastly, we import the contract ABI (Application Binary Interface) for the Celo-Dao contract from the contracts folder.
 
 ```javascript
 const ERC20_DECIMALS = 18;
 const contractAddress = "0x69dfb020bA12Ce303118E3eF81f9b9E4eB08cE17";
 ```
 
-We then set the ERC20 decimals and the contract address of our smart contract.
+We then set the `ERC20 decimals` variable and the contract address of our smart contract.
 
 ```javascript
 const [contract, setcontract] = useState(null);
@@ -552,7 +624,7 @@ const [cUSDBalance, setcUSDBalance] = useState(0);
 const [proposals, setProposals] = useState([]);
 ```
 
-Next, we create the state variables for the app. We use the useState hook to create the contract, address, kit, cUSDBalance, and proposals state variables.
+Next, we create the state variables for the app. We use the `useState` hook to create the `contract`, `address`, `kit`, `cUSDBalance`, and `proposals` state variables.
 
 ```javascript
 const connectToWallet = async () => {
@@ -577,7 +649,7 @@ const connectToWallet = async () => {
 };
 ```
 
-Next, we created a the `connectToWallet()` function that allows the user to connect to their wallet and sets the address and kit.
+Next, we created a the `connectToWallet()` function that allows the user to connect to their wallet and sets the `address` and `kit`.
 
 ```javascript
 const getBalance = useCallback(async () => {
@@ -593,7 +665,7 @@ const getBalance = useCallback(async () => {
 }, [address, kit]);
 ```
 
-The `getBalance()` function allows us to get the user's cUSD balance and set the contract.
+The `getBalance()` function allows us to get the user's cUSD balance and set the `contract`.
 
 ```javascript
 const getProposals = useCallback(async () => {
@@ -620,7 +692,7 @@ const getProposals = useCallback(async () => {
 }, [contract]);
 ```
 
-The `getProposals()` function is used to get the list of proposals from the contract. We use the getProposalsLength method to get the number of proposals, and loop through each proposal to get its properties. We then store the proposals in the proposals state variable.
+The `getProposals()` function is used to get the list of proposals from the contract. We use the `getProposalsLength()` method to get the number of proposals and loop through each proposal to get its properties. We then store the proposals in the proposals state variable.
 
 ```javascript
 const addProposal = async (_description) => {
@@ -633,7 +705,7 @@ const addProposal = async (_description) => {
 };
 ```
 
-The addProposal function is used to add a proposal to the contract. We use the `createProposal` method to add the proposal, and then call the `getProposals()` function to update the proposals state variable.
+The `addProposal()` function is used to add a proposal to the contract. We use the `createProposal()` method to add the proposal, and then call the `getProposals()` function to update the proposals state variable.
 
 ```javascript
 const addMember = async (_address, _votingPower) => {
@@ -657,7 +729,7 @@ const removeMember = async (_address) => {
 };
 ```
 
-We use the `addMember()` and `removeMember` methods to add and remove members from our Dao, and then call the `getProposals()` function to update the proposals state variable.
+We use the `addMember()` and `removeMember()` methods to add and remove members from our DAO, and then call the `getProposals()` function to update the proposals state variable.
 
 ```javascript
 const vote = async (_proposalId, _vote) => {
@@ -725,8 +797,8 @@ return (
 export default App;
 ```
 
-And finally, we render the App component and return the Home and proposals components with the necessary props.
+And finally, we render the **App** component and return the **Home** and **Proposals** components with the necessary props.
 
 ## Conclusion
 
-In this tutorial, we went through writing a smart contract for a decentralized autonomous organization and deploy to the celo block-chain. We also learned how to interact with the smart contract using javascript. I hope you learned alot from thi tutorial. Thank you!
+In this tutorial, we went through writing a smart contract for a decentralized autonomous organization and deploy it to the Celo blockchain. We also learned how to interact with the smart contract using javascript. I hope you learned a lot from this tutorial. Thank you!
