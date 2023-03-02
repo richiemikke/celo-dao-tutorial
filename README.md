@@ -2,31 +2,59 @@
 
 ## Introduction
 
-A DAO is a decentralized autonomous organization made possible by the blockchain. They are built and sustained by a community of individuals who are personally invested in it, and power it through a consensus voting mechanism. In this tutorial, I will show you how to build a DAO contract in Solidity. We will walk through the implementation of a simple DAO that enables members to propose and vote on proposals and execute the proposals once they have been approved. We will cover the essential aspects of a DAO, such as the structure of the smart contract, the functions for adding and removing members, creating and voting on proposals, and executing the approved proposals. By the end of this tutorial, you will have a solid understanding of how a DAO works.
+A Decentralized Autonomous Organization(DAO) is a decentralized autonomous organization made possible by the blockchain. They are built and sustained by a community of individuals who are personally invested in it, and power it through a consensus voting mechanism. 
 
-Here’s a demo [link](https://rococo-malabi-21a086.netlify.app/) of what you’ll be creating.
+In this tutorial, I will show you how to build a DAO contract in Solidity. We will walk through the implementation of a simple DAO that enables members to propose and vote on proposals and execute the proposals once they have been approved. 
 
-And a screenshot.
+We will cover the essential aspects of a DAO, such as:
+
+- The structure of the smart contract.
+- The functions for adding and removing members.
+- Creating and voting on proposals.
+- Executing the approved proposals. 
+
+By the end of this tutorial, you will have a solid understanding of how a DAO works.
+
+Here’s a [demo](https://rococo-malabi-21a086.netlify.app/) of what you’ll build.
+
+Below is an image of what we will build.
 
 ![image](images/celo-dao.jpg)
 
+## Table Of Contents
+  * [Introduction](#introduction)
+  * [Prerequisites](#prerequisites)
+  * [Requirements](#requirements)
+  * [SmartContract](#smartcontract)
+    + [Break down](#break-down)
+  * [Deployment](#deployment)
+  * [Frontend](#frontend)
+      - [App.js](#appjs)
+    + [Break down](#break-down-1)
+  * [Conclusion](#conclusion)
+
 ## Prerequisites
 
-- Solidity.
-- React.
+- [Solidity](https://docs.soliditylang.org/)
+- [React](https://reactjs.org/)
 
 ## Requirements
 
-- Solidity.
-- React.
-- Bootstrap.
-- NodeJS 12.0.1 upwards installed.
-- Celo Extension Wallet.
-- Remix IDE
+- [Solidity](https://docs.soliditylang.org/)
+- [React](https://reactjs.org/)
+- [Bootstrap](https://getbootstrap.com/)
+- [NodeJS](https://nodejs.org/en/download/). Install version 12.0.1 or above.
+- [Celo Extension Wallet](https://chrome.google.com/webstore/detail/celoextensionwallet/kkilomkmpmkbdnfelcpgckmpcaemjcdh?hl=en)
+- [Remix IDE](https://remix.ethereum.org/)
 
 ## SmartContract
 
-Let's begin writing our smart contract in Remix IDE
+Let's begin writing our smart contract in [Remix IDE](https://remix.ethereum.org/). When you Open the Remix IDE, follow the steps below to create a new solidity file:
+1. Navigate to `file explorer` tab
+2. Click on the `file` icon.
+3. Name the file `CELODAO.sol`.
+4. Press the enter key.
+5. Copy the code below into the the file. 
 
 The completed code Should look like this.
 
@@ -156,7 +184,7 @@ pragma solidity ^0.8.0;
 
 ```
 
-First, we declared our license and the solidity version.
+First, we declared a license and the solidity version.
 
 ```solidity
 contract CELODAO {
@@ -172,7 +200,7 @@ contract CELODAO {
     }
 ```
 
-In this section, we define our smart contract CELODAO. Next, we declare a state variable called owner that will store the address of the owner of the smart contract.
+In this section, we define our smart contract CELODAO. Next, we declare a state variable called `owner` that will store the address of the owner of the smart contract.
 
 We also declare a new struct `MemberInfo` that contains two fields: `memberAddress` and `votingPower`. This struct will be used to store information about each member of the DAO.
 
@@ -207,9 +235,17 @@ Here we declare several events that will be emitted when certain actions are tak
 
 ```
 
-In this section, we declares a new struct called `Proposal` that will be used to store information about each proposal. It contains several fields, including the ID of the proposal, the address of the proposer, a description of the proposal, the number of yes votes, the number of no votes, a mapping of each member's vote, and a flag to indicate whether the proposal has been executed.
+In this section, we declares a new struct called `Proposal` that will be used to store information about each proposal. It contains several fields, including:
 
-We also declare a public mapping called proposals that maps a proposal ID to a Proposal struct. proposalCount will keep track of the total number of proposals in our DAO.
+- The ID of the proposal. 
+- The address of the proposer.
+- A description of the proposal. 
+- The number of yes votes.
+- The number of no votes.
+- A mapping of each member's vote.
+- A flag to indicate whether the proposal has been executed.
+
+We also declare a public mapping called `proposals` that maps a proposal ID to a `Proposal` struct. `proposalCount` will keep track of the total number of proposals in our DAO.
 
 Lastly, we added a constructor function for the CELODAO contract. It sets the owner state variable to the address of the contract creator.
 
@@ -225,7 +261,7 @@ Lastly, we added a constructor function for the CELODAO contract. It sets the ow
 
 ```
 
-Next we add a new function called `addMember` this function adds a new member to our DAO contract. It takes two arguments `_address`, which is the address of the new member, and `_votingPower`, which is the voting power of the new member. The function first checks to make sure that the caller of the function is the contract owner, and that the given \_address is not already a member. It then increases the member count, creates a new MemberInfo struct for the new member, and adds it to the members mapping using the_address as the key. Finally, it emits a NewMember event with the new member's address and voting power.
+Next we add a new function called `addMember` this function adds a new member to our DAO contract. It takes two arguments `_address`, which is the address of the new member, and `_votingPower`, which is the voting power of the new member. The function first check that the caller of the function is the contract owner, and that the given `_address` is not already a member. It then increases the member count, creates a new `MemberInfo` struct for the new member, and adds it to the members mapping using the_address as the key. Finally, it emits a NewMember event with the new member's address and voting power.
 
 ```solidity
  function removeMember(address _address) public {
@@ -256,7 +292,11 @@ function createProposal(string memory _description) public {
 
 Now lets look at the `createProposal` function. This function creates a new proposal in our DAO. It takes one argument `_description`, which is a string containing a description of the proposal.
 
-The function first creates a reference to the Proposal struct at index `proposalCount` in the proposals array using the storage keyword. It then sets the `proposalId` to the value of `proposalCount`, the proposer to the address of the caller, the description to the provided description, and sets the initial `yesVotes` and `noVotes` to 0.
+The function first creates a reference to the Proposal struct at index `proposalCount` in the proposals array using the storage keyword. It then:
+- Sets the `proposalId` to the value of `proposalCount`.
+- The proposer to the address of the caller. 
+- The description to the provided description. 
+- Sets the initial `yesVotes` and `noVotes` to 0.
 
 Finally, it sets the executed flag to false, indicating that the proposal has not been executed yet.
 
@@ -283,7 +323,13 @@ At the end of the function, the `proposalCount` is incremented, and the new prop
     }
 ```
 
-The next function is the `getProposal()`. This function is a view function that takes an \_index parameter and returns a tuple containing the various properties of a proposal: `proposalId`, `proposer`, `description`, `yesVotes`, `noVotes`, and `executed`.
+The next function is the `getProposal()`. This function is a view function that takes an \_index parameter and returns a tuple containing the various properties of a proposal: 
+- `proposalId`
+- `proposer`
+- `description`
+- `yesVotes`
+- `noVotes`.
+- `executed`.
 
 It creates a `Proposal` object with the corresponding `_index` and returns the properties of the proposal as a tuple.
 
@@ -343,19 +389,21 @@ Next, we need to fund our newly created wallet which can done using the celo alf
 
 You can now fund your wallet and deploy your contract using the celo plugin in remix.
 
+This is a [guide](https://docs.celo.org/developer/setup/wallet) on how to fund and create a celo testnet account.
+
 ## Frontend
 
-Click on [this](https://github.com/richiemikke/celo-dao-tutorial) repo from your github.
+Click on this [repo](https://github.com/richiemikke/celo-dao-tutorial) from your github. Follow the step below to clone it on your local machinbe.
 
-- Clone the repo to your computer.
-- open the project from from vscode.
-- Run `npm install` command to install all the dependencies required to run the app locally.
+1. Clone the repo to your computer.
+2. open the project from from vscode.
+3. Run `npm install` command to install all the dependencies required to run the app locally.
 
 #### App.js
 
 The completed code should look like this.
 
-```solidity
+```javascript
 import "./App.css";
 import Home from "./components/home";
 import { Proposals } from "./components/proposals";
@@ -535,7 +583,7 @@ import { newKitFromWeb3 } from "@celo/contractkit";
 import celodao from "./contracts/celo-dao.abi.json";
 ```
 
-The first step is to import the necessary components and libraries. We start by importing the Home and Proposals components from the components folder. We then import the `useState`, `useEffect`, and `useCallback` hooks from React, as well as the Web3 library for interacting with the Ethereum blockchain. Lastly, we import the contract ABI (Application Binary Interface) for the Celo-Dao contract from the contracts folder.
+The first step is to import the necessary components and libraries. We start by importing the Home and Proposals components from the components folder. We then import the `useState`, `useEffect`, and `useCallback` hooks from React, as well as the Web3 library for interacting with the Ethereum blockchain. Lastly, we import the contract Application Binary Interface(ABI) for the celo-dao contract from the contracts folder.
 
 ```javascript
 const ERC20_DECIMALS = 18;
@@ -633,7 +681,7 @@ const addProposal = async (_description) => {
 };
 ```
 
-The addProposal function is used to add a proposal to the contract. We use the `createProposal` method to add the proposal, and then call the `getProposals()` function to update the proposals state variable.
+The `addProposal` function is used to add a proposal to the contract. We use the `createProposal` method to add the proposal, and then call the `getProposals()` function to update the proposals state variable.
 
 ```javascript
 const addMember = async (_address, _votingPower) => {
@@ -657,7 +705,7 @@ const removeMember = async (_address) => {
 };
 ```
 
-We use the `addMember()` and `removeMember` methods to add and remove members from our Dao, and then call the `getProposals()` function to update the proposals state variable.
+We use the `addMember()` and `removeMember` methods to add and remove members from our DAO, and then call the `getProposals()` function to update the proposals state variable.
 
 ```javascript
 const vote = async (_proposalId, _vote) => {
@@ -729,4 +777,4 @@ And finally, we render the App component and return the Home and proposals compo
 
 ## Conclusion
 
-In this tutorial, we went through writing a smart contract for a decentralized autonomous organization and deploy to the celo block-chain. We also learned how to interact with the smart contract using javascript. I hope you learned alot from thi tutorial. Thank you!
+In this tutorial, we went through writing a smart contract for a decentralized autonomous organization and deploy to the Celo blockchain. We also learned how to interact with the smart contract using javascript. I hope you learned alot from thi tutorial. Thank you!
