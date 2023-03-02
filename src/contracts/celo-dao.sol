@@ -10,6 +10,7 @@ contract CELODAO {
     }
 
     mapping(address => MemberInfo) public members;
+    mapping(address => mapping(uint => bool)) public voted;
     uint256 public memberCount;
 
     event NewMember(address indexed _address, uint256 _votingPower);
@@ -126,13 +127,18 @@ contract CELODAO {
 
     function vote(uint256 _proposalId, bool _vote) public {
         require(
-            proposals[_proposalId].votes[msg.sender] == false,
+            members[msg.sender].memberAddress != address(0),
+            "The caller is not a member."
+        );
+        require(
+            voted[msg.sender][_proposalId] == false,
             "The member has already voted on this proposal."
         );
         require(
             proposals[_proposalId].executed == false,
             "The proposal has already been executed."
         );
+        voted[msg.sender][_proposalId] = true;
         proposals[_proposalId].votes[msg.sender] = _vote;
         if (_vote) {
             proposals[_proposalId].yesVotes += members[msg.sender].votingPower;

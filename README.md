@@ -57,6 +57,7 @@ contract CELODAO {
     }
 
     mapping (address => MemberInfo) public members;
+    mapping(address => mapping(uint => bool)) public voted;
     uint256 public memberCount;
 
 
@@ -150,8 +151,19 @@ contract CELODAO {
     }
 
     function vote(uint256 _proposalId, bool _vote) public {
-        require(proposals[_proposalId].votes[msg.sender] == false, "The member has already voted on this proposal.");
-        require(proposals[_proposalId].executed == false, "The proposal has already been executed.");
+        require(
+            members[msg.sender].memberAddress != address(0),
+            "The caller is not a member."
+        );
+        require(
+            voted[msg.sender][_proposalId] == false,
+            "The member has already voted on this proposal."
+        );
+        require(
+            proposals[_proposalId].executed == false,
+            "The proposal has already been executed."
+        );
+        voted[msg.sender][_proposalId] = true;
         proposals[_proposalId].votes[msg.sender] = _vote;
         if (_vote) {
             proposals[_proposalId].yesVotes += members[msg.sender].votingPower;
@@ -199,6 +211,7 @@ contract CELODAO {
     }
 
     mapping (address => MemberInfo) public members;
+    mapping(address => mapping(uint => bool)) public voted;
     uint256 public memberCount;
     }
 ```
@@ -207,7 +220,7 @@ In this section, we define our smart contract **CELODAO**. Next, we declare a st
 
 We also declare a new struct `MemberInfo` that contains two fields: `memberAddress` and `votingPower`. This struct will be used to store information about each member of the DAO.
 
-Finally, we declare a public mapping called `members` that maps an address to a `MemberInfo` struct. It will be used to store information about each member of the DAO and then we declare a state variable called `memberCount` which will keep track of the total number of members in our DAO.
+Finally, we declare two `public` mappings called `members` and `voted` where the `members` mapping maps an `address` to a `MemberInfo` struct which will be used to store information about each member of the DAO and the `voted` mapping maps an `address` to a nested mapping that then maps a `proposalId` to a `bool` value keeping track of users who voted on a proposal. Finally, we declare a state variable called `memberCount` which will keep track of the total number of members in our DAO.
 
 ```solidity
     event NewMember(address indexed _address, uint256 _votingPower);
@@ -336,9 +349,20 @@ The next function is the `getProposal()`. This function is a `view` function tha
 It creates a `Proposal` object with the corresponding `_index` and returns the properties of the proposal as a tuple.
 
 ```solidity
-   function vote(uint256 _proposalId, bool _vote) public {
-        require(proposals[_proposalId].votes[msg.sender] == false, "The member has already voted on this proposal.");
-        require(proposals[_proposalId].executed == false, "The proposal has already been executed.");
+    function vote(uint256 _proposalId, bool _vote) public {
+        require(
+            members[msg.sender].memberAddress != address(0),
+            "The caller is not a member."
+        );
+        require(
+            voted[msg.sender][_proposalId] == false,
+            "The member has already voted on this proposal."
+        );
+        require(
+            proposals[_proposalId].executed == false,
+            "The proposal has already been executed."
+        );
+        voted[msg.sender][_proposalId] = true;
         proposals[_proposalId].votes[msg.sender] = _vote;
         if (_vote) {
             proposals[_proposalId].yesVotes += members[msg.sender].votingPower;
@@ -352,11 +376,11 @@ It creates a `Proposal` object with the corresponding `_index` and returns the p
 
 Next, we create a function `vote()`. The vote function allows a member to vote on a proposal. The function takes two parameters where `_proposalId` is the ID of the proposal being voted on, and `_vote` is a `boolean` indicating whether the member is voting in favor or against the proposal.
 
-The first require statement checks if the member has not already voted on the proposal. If the member has already voted, the function will fail with an error message.
+The first require statement checks if the `msg.sender` is a member of the DAO and the second require statement checks whether he has not already voted on the proposal. If any of those checks fail, the function will fail with an error message.
 
-The second require statement checks if the proposal has not already been executed. If the proposal has already been executed, the function will fail with an error message.
+The third require statement checks if the proposal has not already been executed. If the proposal has already been executed, the function will fail with an error message.
 
-The `proposals[_proposalId].votes[msg.sender] = _vote` line records the member's vote in the votes mapping of the proposal. The votes mapping stores a boolean value indicating whether a member has voted on the proposal or not. If the member is voting in favor of the proposal, the proposal's `yesVotes` count is incremented by their voting power. If they are voting against the proposal, the proposal's `noVotes` count is incremented by their voting power.
+If all checks have passed, we set the `bool` value nested inside `voted` of the sender for this proposal to _true_. The `proposals[_proposalId].votes[msg.sender] = _vote` line records the member's vote in the votes mapping of the proposal. The votes mapping stores a boolean value indicating whether a member has voted on the proposal or not. If the member is voting in favor of the proposal, the proposal's `yesVotes` count is incremented by their voting power. If they are voting against the proposal, the proposal's `noVotes` count is incremented by their voting power.
 
 Finally, the function emits a `ProposalVoted` event, passing in the proposal `ID`, the member's `address`, and their `vote`. This event can be used to track the progress of a proposal as members vote on it.
 
