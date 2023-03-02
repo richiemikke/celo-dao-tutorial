@@ -102,6 +102,9 @@ contract CELODAO {
     }
 
     function createProposal(string memory _description) public {
+        if(proposalCount > 0){
+            require(proposals[proposalCount - 1].executed == true, "There is already an active proposal");
+        }
         Proposal storage proposal = proposals[proposalCount];
         proposal.proposalId = proposalCount;
         proposal.proposer = msg.sender;
@@ -256,7 +259,10 @@ Next, we add a new function called `addMember()` this function adds a new member
 Next, we add a function `removeMember()`. This function removes a member from our DAO. It takes one parameter`_address`, which is the address of the member to be removed. The function first checks that the caller of the function is the contract owner, that the given \_address is actually a member, and that the member does not have an active proposal. It then sets the member's `memberAddress` to `address(0)`, decreases the `memberCount`, and emits a `MemberRemoved` event with the removed member's address.
 
 ```solidity
-function createProposal(string memory _description) public {
+    function createProposal(string memory _description) public {
+        if(proposalCount > 0){
+            require(proposals[proposalCount - 1].executed == true, "There is already an active proposal");
+        }
         Proposal storage proposal = proposals[proposalCount];
         proposal.proposalId = proposalCount;
         proposal.proposer = msg.sender;
@@ -271,7 +277,7 @@ function createProposal(string memory _description) public {
 
 Now let's look at the `createProposal()` function. This function creates a new proposal in our DAO. It takes one parameter`_description`, which is a `string` containing a description of the proposal.
 
-The function first creates a reference to the Proposal struct at the index `proposalCount` in the proposals array using the storage keyword. It then sets the `proposalId` to the value of `proposalCount`, the proposer to the address of the caller, the description to the provided description, and sets the initial `yesVotes` and `noVotes` to 0.
+The function first checks if the latest proposal(if any) is currently active as there can only be one active proposal at a time. It then creates a reference to the Proposal struct at the index `proposalCount` in the proposals array using the storage keyword. It then sets the `proposalId` to the value of `proposalCount`, the proposer to the address of the caller, the description to the provided description, and sets the initial `yesVotes` and `noVotes` to 0.
 
 Finally, it sets the executed flag to false, indicating that the proposal has not been executed yet.
 

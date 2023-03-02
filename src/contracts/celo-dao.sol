@@ -56,6 +56,9 @@ contract CELODAO {
     }
 
     function createProposal(string memory _description) public {
+        if(proposalCount > 0){
+            require(proposals[proposalCount - 1].executed == true, "There is already an active proposal");
+        }
         Proposal storage proposal = proposals[proposalCount];
         proposal.proposalId = proposalCount;
         proposal.proposer = msg.sender;
