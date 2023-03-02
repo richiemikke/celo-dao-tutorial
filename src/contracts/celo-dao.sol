@@ -49,7 +49,7 @@ contract CELODAO {
     function removeMember(address _address) public {
         require(msg.sender == owner, "Only contract owner can remove a member.");
         require(members[_address].memberAddress != address(0), "The address is not a member.");
-        require(proposals[proposalCount].proposer != _address, "Member cannot be removed while they have an active proposal.");
+        require(proposals[proposalCount - 1].executed || proposals[proposalCount - 1].proposer != _address, "Member cannot be removed while they have an active proposal.");
         members[_address].memberAddress = address(0);
         memberCount --;
         emit MemberRemoved(_address);
@@ -59,6 +59,7 @@ contract CELODAO {
         if(proposalCount > 0){
             require(proposals[proposalCount - 1].executed == true, "There is already an active proposal");
         }
+        require(members[msg.sender].memberAddress != address(0), "The caller is not a member.");
         Proposal storage proposal = proposals[proposalCount];
         proposal.proposalId = proposalCount;
         proposal.proposer = msg.sender;
@@ -66,7 +67,7 @@ contract CELODAO {
         proposal.yesVotes = 0;
         proposal.noVotes = 0;
         proposal.executed = false;
-        proposalCount ++;
+        proposalCount++;
         emit ProposalCreated(proposalCount, msg.sender, _description);
     }
 
