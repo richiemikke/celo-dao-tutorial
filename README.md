@@ -83,6 +83,7 @@ contract CELODAO {
     }
 
     function addMember(address _address, uint256 _votingPower) public {
+        require(_address != address(0), "Zero address is not valid");
         require(msg.sender == owner, "Only contract owner can add a new member.");
         require(members[_address].memberAddress == address(0), "The address is already a member.");
         require(_votingPower > 0, "The voting power must be positive.");
@@ -227,7 +228,8 @@ We also declare a public mapping called `proposals` that maps a `proposal ID` to
 Lastly, we added a constructor function for the CELODAO contract. It sets the `owner` state variable to the address of the contract creator.
 
 ```solidity
-  function addMember(address _address, uint256 _votingPower) public {
+    function addMember(address _address, uint256 _votingPower) public {
+        require(_address != address(0), "Zero address is not valid");
         require(msg.sender == owner, "Only contract owner can add a new member.");
         require(members[_address].memberAddress == address(0), "The address is already a member.");
         require(_votingPower > 0, "The voting power must be positive.");
@@ -238,7 +240,7 @@ Lastly, we added a constructor function for the CELODAO contract. It sets the `o
 
 ```
 
-Next, we add a new function called `addMember()` this function adds a new member to our DAO contract. It takes two arguments `_address`, which is the address of the new member, and `_votingPower`, which is the voting power of the new member. The function first checks to make sure that the caller of the function is the contract `owner`, and that the given \_address is not already a member. It then increases the member count, creates a new `MemberInfo` struct for the new member, and adds it to the members mapping using the `_address` as the key. Finally, it emits a `NewMember` event with the new member's address and voting power.
+Next, we add a new function called `addMember()` this function adds a new member to our DAO contract. It takes two arguments `_address`, which is the address of the new member, and `_votingPower`, which is the voting power of the new member. The function first checks to make sure that the `_address` is not the _zero address_, the caller of the function is the contract `owner`, and that the given \_address is not already a member. It then increases the member count, creates a new `MemberInfo` struct for the new member, and adds it to the members mapping using the `_address` as the key. Finally, it emits a `NewMember` event with the new member's address and voting power.
 
 ```solidity
  function removeMember(address _address) public {

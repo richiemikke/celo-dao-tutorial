@@ -37,6 +37,7 @@ contract CELODAO {
     }
 
     function addMember(address _address, uint256 _votingPower) public {
+        require(_address != address(0), "Zero address is not valid");
         require(msg.sender == owner, "Only contract owner can add a new member.");
         require(members[_address].memberAddress == address(0), "The address is already a member.");
         require(_votingPower > 0, "The voting power must be positive.");
