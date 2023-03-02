@@ -92,12 +92,25 @@ contract CELODAO {
         emit NewMember(_address, _votingPower);
     }
 
+
     function removeMember(address _address) public {
-        require(msg.sender == owner, "Only contract owner can remove a member.");
-        require(members[_address].memberAddress != address(0), "The address is not a member.");
-        require(proposals[proposalCount - 1].executed || proposals[proposalCount - 1].proposer != _address, "Member cannot be removed while they have an active proposal.");
+        require(
+            msg.sender == owner,
+            "Only contract owner can remove a member."
+        );
+        require(
+            members[_address].memberAddress != address(0),
+            "The address is not a member."
+        );
+        if (proposalCount > 0) {
+            require(
+                proposals[proposalCount - 1].executed ||
+                    proposals[proposalCount - 1].proposer != _address,
+                "Member cannot be removed while they have an active proposal."
+            );
+        }
         members[_address].memberAddress = address(0);
-        memberCount --;
+        memberCount--;
         emit MemberRemoved(_address);
     }
 
@@ -247,12 +260,24 @@ Lastly, we added a constructor function for the CELODAO contract. It sets the `o
 Next, we add a new function called `addMember()` this function adds a new member to our DAO contract. It takes two arguments `_address`, which is the address of the new member, and `_votingPower`, which is the voting power of the new member. The function first checks to make sure that the `_address` is not the _zero address_, the caller of the function is the contract `owner`, and that the given \_address is not already a member. It then increases the member count, creates a new `MemberInfo` struct for the new member, and adds it to the members mapping using the `_address` as the key. Finally, it emits a `NewMember` event with the new member's address and voting power.
 
 ```solidity
- function removeMember(address _address) public {
-        require(msg.sender == owner, "Only contract owner can remove a member.");
-        require(members[_address].memberAddress != address(0), "The address is not a member.");
-        require(proposals[proposalCount].proposer != _address, "Member cannot be removed while they have an active proposal.");
+    function removeMember(address _address) public {
+        require(
+            msg.sender == owner,
+            "Only contract owner can remove a member."
+        );
+        require(
+            members[_address].memberAddress != address(0),
+            "The address is not a member."
+        );
+        if (proposalCount > 0) {
+            require(
+                proposals[proposalCount - 1].executed ||
+                    proposals[proposalCount - 1].proposer != _address,
+                "Member cannot be removed while they have an active proposal."
+            );
+        }
         members[_address].memberAddress = address(0);
-        memberCount --;
+        memberCount--;
         emit MemberRemoved(_address);
     }
 ```
@@ -264,6 +289,7 @@ Next, we add a function `removeMember()`. This function removes a member from ou
         if(proposalCount > 0){
             require(proposals[proposalCount - 1].executed == true, "There is already an active proposal");
         }
+        require(members[msg.sender].memberAddress != address(0), "The caller is not a member.");
         Proposal storage proposal = proposals[proposalCount];
         proposal.proposalId = proposalCount;
         proposal.proposer = msg.sender;
@@ -271,14 +297,14 @@ Next, we add a function `removeMember()`. This function removes a member from ou
         proposal.yesVotes = 0;
         proposal.noVotes = 0;
         proposal.executed = false;
-        proposalCount ++;
+        proposalCount++;
         emit ProposalCreated(proposalCount, msg.sender, _description);
     }
 ```
 
 Now let's look at the `createProposal()` function. This function creates a new proposal in our DAO. It takes one parameter`_description`, which is a `string` containing a description of the proposal.
 
-The function first checks if the latest proposal(if any) is currently active as there can only be one active proposal at a time. It then creates a reference to the Proposal struct at the index `proposalCount` in the proposals array using the storage keyword. It then sets the `proposalId` to the value of `proposalCount`, the proposer to the address of the caller, the description to the provided description, and sets the initial `yesVotes` and `noVotes` to 0.
+The function first checks if the latest proposal(if any) is currently active as there can only be one active proposal at a time and whether the `msg.sender` is a member of the DAO, if none of the checks is passed the function fails with a message. It then creates a reference to the Proposal struct at the index `proposalCount` in the proposals array using the storage keyword. It then sets the `proposalId` to the value of `proposalCount`, the proposer to the address of the caller, the description to the provided description, and sets the initial `yesVotes` and `noVotes` to 0.
 
 Finally, it sets the executed flag to false, indicating that the proposal has not been executed yet.
 
